@@ -1,7 +1,7 @@
 import { TodoistApi } from "@doist/todoist-api-typescript";
 import { writeFile } from "fs";
 import { readFile } from "fs/promises";
-import { spawn } from "child_process";
+import { exec } from "child_process";
 import path from "path";
 
 async function fetchAndPrintTodoList() {
@@ -102,24 +102,38 @@ async function fetchAndPrintTodoList() {
   }
 
   function print() {
-    // Define the name of the PowerShell script
-    const scriptName = path.join(process.cwd(), "print.ps1");
 
-    // Create a child process to execute the script
-    const child = spawn("powershell.exe", ["-File", scriptName]);
+    console.log("Printing file");
+
+    // Command to execute the bash script
+    const command = `./print.sh tasks.txt`;
+
+    const process = exec(command, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Error executing script: ${error.message}`);
+            return;
+        }
+
+        if (stderr) {
+            console.error(`stderr: ${stderr}`);
+            return;
+        }
+
+        console.log(`stdout: ${stdout}`);
+    });
 
     // Listen for data from the script's stdout
-    child.stdout.on("data", (data) => {
+    process.stdout.on("data", (data) => {
       console.log(`Script output: ${data.toString()}`);
     });
 
     // Listen for errors, if any
-    child.stderr.on("data", (error) => {
+    process.stderr.on("data", (error) => {
       console.error(`Script error: ${error.toString()}`);
     });
 
     // Listen for the script to exit
-    child.on("close", (code) => {
+    process.on("close", (code) => {
       if (code === 0) {
         console.log(`Script completed successfully.`);
       } else {
